@@ -7,6 +7,7 @@ import { NextTurn } from './components/NexTurn'
 import { checkWinnerFrom, checkEndGame } from './logic/board'
 import { WinnerModal } from './components/WinnerModal'
 import { saveGameToStorage, resetGameStorage } from './logic/storage'
+import { calculateNextMove } from './logic/IA'
 
 import './App.css'
 
@@ -29,33 +30,46 @@ function App() {
     resetGameStorage()
   }
 
-  const updateBoard = (index) => {
-    // avoid change square
-    if(board[index] || winner) return 
-
-    // update board
-    const newBoard = [...board]
-    newBoard[index] = turn
-    setBoard(newBoard)
-
-    // change turn
-    const newTurn = turn == TURNS.x ? TURNS.o : TURNS.x
-    setTurn(newTurn)
-
-    // save game
-    saveGameToStorage({
-      board: newBoard, 
-      turn: newTurn
-    })
-
-    // check if winner
+  const checkWinGame = (newBoard) => {
     const newWinner = checkWinnerFrom(newBoard)
     if (newWinner) {
       confetti()
       setWinner(newWinner)
-    } else  if(checkEndGame(newBoard)) {
+      return
+    } else if(checkEndGame(newBoard)) {
       setWinner(false)
     }
+  }
+
+  const updateBoard = (index) => {
+    // Avoid change square
+    if(board[index] || winner) return 
+
+    // Update board
+    let newBoard = [...board]
+    newBoard[index] = turn
+    setBoard(newBoard)
+
+    // Check if user win
+    checkWinGame(newBoard)
+
+    // IA turn
+    const IAPlay = calculateNextMove(newBoard)
+    newBoard[IAPlay] = TURNS.o
+    setBoard(newBoard)
+
+    // Check IA win
+    checkWinGame(newBoard)
+
+    // Set next user turn
+    setTurn(TURNS.x)
+
+    // Save game
+    saveGameToStorage({
+      board: newBoard, 
+      turn: TURNS.x
+    })
+    
   }
 
   return (
